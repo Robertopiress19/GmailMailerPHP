@@ -2,15 +2,15 @@
 	global $config;
 
 	$config = [
-		'server' => 'imap.gmail.com',
-		'user' => 'teste.fivecom@gmail.com',
-		'pass' => 'fivecom123',
-		'port' => 993,
+		'server' => 'emaildoservidor.gmail.com',
+		'user' => 'seuemail@gmail.com',
+		'pass' => 'sua senha',
+		'port' => 993, // A porta que você deseja.
 
 		'smtp' => [
 			'host' => 'smtp.gmail.com',
-			'username' => 'teste.fivecom@gmail.com',
-			'senha_app' => 'fivecom123',
+			'username' => 'seuemail@gmail.com',
+			'senha_app' => 'sua senha',
 			'port' => 587,
 		]
 		];
