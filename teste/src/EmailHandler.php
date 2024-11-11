@@ -1,95 +1,61 @@
 <?php
 
-class EmailHandler {
+function handleEmails() {
 
-    // Conexão com o servidor IMAP
-    private $conn;
+	$server = 'imap.servidor.com';
+	$user = 'seugmail@gmail.com';
+	$pass = '';
+	$port = 993;
 
-    // Armazenamento de e-mails e contagem de mensagens
-    private $inbox = [];
-    private $msg_cnt = 0;
+	// Conexão com o servidor IMAP
+	$conn = null;
 
-    // Credenciais de login de e-mail
-    private $server;
-    private $user;
-    private $pass;
-    private $port;
+	// Armazenamento de e-mails e contagem de mensagens
+	$inbox = [];
+	$msg_cnt = 0;
 
-    // Construtor para definir as credenciais e conectar ao servidor
-    public function __construct($server, $user, $pass, $port = 993) {
-        $this->server = $server;
-        $this->user = $user;
-        $this->pass = $pass;
-        $this->port = $port;
+	// Conectar ao servidor IMAP
+	$imapPath = "{" . $server . ":" . $port . "/imap/ssl/novalidate-cert}INBOX";
+	$conn = imap_open($imapPath, $user, $pass);
 
-        // Conectar ao servidor IMAP e carregar os e-mails da caixa de entrada
-        $this->connect();
-        $this->getInbox();
-    }
 
-    // Método para fechar a conexão
-    public function close() {
-        $this->inbox = [];
-        $this->msg_cnt = 0;
-        imap_close($this->conn);
-    }
+	// Contar o número de e-mails
+	$msg_cnt = imap_num_msg($conn);
 
-    // Método para conectar ao servidor IMAP
-    private function connect() {
-        // String de conexão IMAP
-        $imapPath = "{" . $this->server . ":" . $this->port . "/imap/ssl}INBOX";
-        $this->conn = imap_open($imapPath, $this->user, $this->pass);
+	// Limitar a leitura a no máximo 10 e-mails
+	$msg_cnt = min($msg_cnt, 5);
 
-        if (!$this->conn) {
-            die("Erro ao conectar no servidor IMAP: " . imap_last_error());
-        }
-    }
+	// Ler e armazenar os e-mails
+	for ($i = 1; $i <= $msg_cnt; $i++) {
+		$header = imap_headerinfo($conn, $i); // Cabeçalho do e-mail
+		$body = imap_body($conn, $i);         // Corpo do e-mail
 
-    // Método para ler os e-mails da caixa de entrada
-    public function getInbox() {
-        $this->msg_cnt = imap_num_msg($this->conn); // Conta o número de e-mails
+		// Armazena o e-mail lido em um array
+		$inbox[] = [
+			'index' => $i,
+			'from' => $header->fromaddress,
+			'subject' => $header->subject,
+			'date' => $header->date,
+			'body' => $body
+		];
+	}
 
-        // Loop para ler cada e-mail
-        for ($i = 1; $i <= $this->msg_cnt; $i++) {
-            $header = imap_headerinfo($this->conn, $i); // Cabeçalho do e-mail
-            $body = imap_body($this->conn, $i);         // Corpo do e-mail
+	// Exibir os e-mails lidos
+	if (empty($inbox)) {
+		echo "<p>Caixa de entrada vazia.</p>";
+	} else {
+		echo "<h2>E-mails Recebidos:</h2><ul>";
+		foreach ($inbox as $email) {
+			echo "<li>";
+			echo "<strong>De:</strong> " . htmlspecialchars($email['from']) . "<br>";
+			echo "<strong>Assunto:</strong> " . htmlspecialchars($email['subject']) . "<br>";
+			echo "<strong>Data:</strong> " . htmlspecialchars($email['date']) . "<br>";
+			echo "<strong>Corpo:</strong> " . nl2br(htmlspecialchars(substr($email['body'], 0, 200))) . "...<br>";
+			echo "</li><hr>";
+		}
+		echo "</ul>";
+	}
 
-            // Armazena o e-mail lido em um array
-            $this->inbox[] = [
-                'index' => $i,
-                'from' => $header->fromaddress,
-                'subject' => $header->subject,
-                'date' => $header->date,
-                'body' => $body
-            ];
-        }
-    }
-
-    // Método para exibir os e-mails lidos
-    public function displayEmails() {
-        if (empty($this->inbox)) {
-            echo "<p>Caixa de entrada vazia.</p>";
-            return;
-        }
-
-        echo "<h2>E-mails Recebidos:</h2><ul>";
-        foreach ($this->inbox as $email) {
-            echo "<li>";
-            echo "<strong>De:</strong> " . htmlspecialchars($email['from']) . "<br>";
-            echo "<strong>Assunto:</strong> " . htmlspecialchars($email['subject']) . "<br>";
-            echo "<strong>Data:</strong> " . htmlspecialchars($email['date']) . "<br>";
-            echo "<strong>Corpo:</strong> " . nl2br(htmlspecialchars(substr($email['body'], 0, 200))) . "...<br>";
-            echo "</li><hr>";
-        }
-        echo "</ul>";
-    }
-
-    // Método para mover um e-mail para outra pasta
-    public function moveEmail($msg_index, $folder = 'INBOX.Processed') {
-        imap_mail_move($this->conn, $msg_index, $folder);
-        imap_expunge($this->conn);
-        $this->getInbox(); // Atualiza a lista de e-mails após mover
-    }
+	// Fechar a conexão
+	imap_close($conn);
 }
-
-?>
